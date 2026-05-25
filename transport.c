@@ -1,18 +1,14 @@
 #include "transport.h"
-//#include "stm32f4xx_hal.h"  <-- REFACTORED: Removed hardware-specific header
-#include <string.h>
-#include <stdint.h>
 #include "bluetooth.h"
+
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 
 /* ===================== CONFIG ===================== */
 
-//extern UART_HandleTypeDef huart1; <-- REFACTORED: Removed hardware handle
-
 #define RX_BUFFER_SIZE 256
-#define MAX_RETRIES    1
-// transport.c — temporary fix for development
-#define ACK_TIMEOUT 100  // was 100000 // crude delay loop
-
+#define ACK_TIMEOUT    100
 
 /* ===================== INTERNAL ===================== */
 
@@ -24,9 +20,6 @@ static volatile int packet_ready = 0;
 
 static uint16_t packet_counter = 0;
 
-static uint8_t rx_byte;
-
-
 /* ===================== CRC ===================== */
 
 static uint16_t calc_crc(uint8_t *data, uint16_t len)
@@ -37,13 +30,16 @@ static uint16_t calc_crc(uint8_t *data, uint16_t len)
         crc ^= data[i];
 
         for (uint8_t j = 0; j < 8; j++) {
-            if (crc & 1) crc = (crc >> 1) ^ 0xA001;
-            else crc >>= 1;
+            if (crc & 1) {
+                crc = (crc >> 1) ^ 0xA001;
+            } else {
+                crc >>= 1;
+            }
         }
     }
+
     return crc;
 }
-
 
 /* ===================== INIT ===================== */
 
@@ -52,11 +48,11 @@ void transport_init(void)
     rx_index = 0;
     packet_ready = 0;
     packet_counter = 0;
-    bluetooth_init();
 
+    bluetooth_init();
 }
 
-/* ===================== SEND WITH ACK ===================== */
+/* ===================== TX PREPARE / SEND ===================== */
 
 void transport_prepare_packet(SecurePacket_t *packet)
 {
@@ -68,13 +64,13 @@ void transport_prepare_packet(SecurePacket_t *packet)
     packet->packet_id = packet_counter++;
 
     /*
-     * Set DATA flag, but do not erase any existing flags.
+     * New packet starts as normal DATA.
+     * encrypt_packet() can later add FLAG_ENCRYPTED.
      */
-    packet->flags |= FLAG_DATA;
+    packet->flags = FLAG_DATA;
 
     /*
-     * Clear CRC for now.
-     * CRC will be calculated after encryption.
+     * CRC is calculated after encryption.
      */
     packet->crc16 = 0;
 }
@@ -86,10 +82,7 @@ int transport_finalize_send(SecurePacket_t *packet)
     }
 
     /*
-     * CRC must be calculated after encryption because we want to protect
-     * the actual bytes that will be transmitted.
-     *
-     * This calculates CRC from packet_id to end of payload/flags area,
+     * CRC is calculated after encryption, over the transmitted data,
      * excluding sync_byte and excluding crc16 itself.
      */
     packet->crc16 = calc_crc(
@@ -102,30 +95,16 @@ int transport_finalize_send(SecurePacket_t *packet)
 
 /*
  * Backward-compatible wrapper.
- * This is okay for unencrypted/simple sends, but app.c should use
- * prepare -> encrypt -> finalize for normal audio data.
+ * For normal encrypted audio, app.c should use:
+ * prepare -> encrypt -> finalize_send
  */
 int transport_send(SecurePacket_t *packet)
 {
     transport_prepare_packet(packet);
     return transport_finalize_send(packet);
 }
-{
-    packet->sync_byte = SYNC_WORD;
-    packet->packet_id = packet_counter++;
-    packet->flags     = FLAG_DATA;
 
-    packet->crc16 = calc_crc(
-        (uint8_t *)&packet->packet_id,
-        sizeof(SecurePacket_t) - 1 - 2
-    );
-
-    // Fire and forget — no ACK wait
-    return bluetooth_send((uint8_t *)packet, sizeof(SecurePacket_t));
-}
-
-
-/* ===================== HANDSHAKE ===================== */`
+/* ===================== HANDSHAKE ===================== */
 
 int transport_handshake(void)
 {
@@ -156,20 +135,18 @@ int transport_handshake(void)
     return 0;
 }
 
-
 /* ===================== SYNC FIND ===================== */
 
 int transport_find_sync(uint8_t *stream, uint16_t len)
 {
     for (uint16_t i = 0; i < len; i++) {
-        if (stream[i] == SYNC_WORD)
+        if (stream[i] == SYNC_WORD) {
             return i;
+        }
     }
+
     return -1;
 }
-
-
-// REPLACE the entire bottom half of transport.c with this:
 
 /* ===================== BYTE PROCESS ===================== */
 
@@ -177,13 +154,19 @@ static void process_byte(uint8_t byte)
 {
     rx_buffer[rx_index++] = byte;
 
-    if (rx_index >= RX_BUFFER_SIZE)
+    if (rx_index >= RX_BUFFER_SIZE) {
         rx_index = 0;
+    }
 
     int sync_pos = transport_find_sync(rx_buffer, rx_index);
-    if (sync_pos < 0) return;
 
-    if ((rx_index - sync_pos) < sizeof(SecurePacket_t)) return;
+    if (sync_pos < 0) {
+        return;
+    }
+
+    if ((uint16_t)(rx_index - sync_pos) < sizeof(SecurePacket_t)) {
+        return;
+    }
 
     memcpy(&rx_packet, &rx_buffer[sync_pos], sizeof(SecurePacket_t));
 
@@ -192,29 +175,38 @@ static void process_byte(uint8_t byte)
         sizeof(SecurePacket_t) - 1 - 2
     );
 
-    if (crc == rx_packet.crc16)
-    {
-        // auto ACK back over BT
-        if (rx_packet.flags & FLAG_DATA)
-        {
+    if (crc == rx_packet.crc16) {
+        /*
+         * Send ACK for valid DATA packets.
+         */
+        if (rx_packet.flags & FLAG_DATA) {
             SecurePacket_t ack;
+
             memset(&ack, 0, sizeof(ack));
+
             ack.sync_byte = SYNC_WORD;
             ack.packet_id = rx_packet.packet_id;
-            ack.flags     = FLAG_ACK;
-            ack.crc16     = calc_crc(
+            ack.flags = FLAG_ACK;
+
+            ack.crc16 = calc_crc(
                 (uint8_t *)&ack.packet_id,
                 sizeof(SecurePacket_t) - 1 - 2
             );
+
             bluetooth_send((uint8_t *)&ack, sizeof(SecurePacket_t));
         }
+
         packet_ready = 1;
     }
 
     uint16_t remaining = rx_index - (sync_pos + sizeof(SecurePacket_t));
-    memmove(rx_buffer,
-            &rx_buffer[sync_pos + sizeof(SecurePacket_t)],
-            remaining);
+
+    memmove(
+        rx_buffer,
+        &rx_buffer[sync_pos + sizeof(SecurePacket_t)],
+        remaining
+    );
+
     rx_index = remaining;
 }
 
@@ -222,8 +214,7 @@ static void process_byte(uint8_t byte)
 
 void transport_process_rx(void)
 {
-    while (bluetooth_available())
-    {
+    while (bluetooth_available()) {
         process_byte(bluetooth_read_byte());
     }
 }
@@ -237,8 +228,17 @@ int transport_packet_received(void)
 
 int transport_receive(SecurePacket_t *packet)
 {
-    if (!packet_ready) return 0;
+    if (packet == NULL) {
+        return 0;
+    }
+
+    if (!packet_ready) {
+        return 0;
+    }
+
     memcpy(packet, &rx_packet, sizeof(SecurePacket_t));
+
     packet_ready = 0;
+
     return 1;
 }
