@@ -54,8 +54,10 @@ void app_loop(void)
         SysHealth_MarkTaskEnd(TASK_AUDIO);
         debug_audio_off();
 
-        // print first 8 bytes of audio payload as proof
         debug_print_bytes("[AUDIO] payload[0..7]", TX_packet.payload, 8);
+
+        // -------- PREPARE PACKET --------
+        transport_prepare_packet(&TX_packet);
 
         // -------- ENCRYPT --------
         debug_encrypt_on();
@@ -70,7 +72,7 @@ void app_loop(void)
         debug_tx_on();
         SysHealth_MarkTaskStart(TASK_TRANSPORT_TX);
 
-        int tx_result = transport_send(&TX_packet);
+        int tx_result = transport_finalize_send(&TX_packet);
 
         SysHealth_MarkTaskEnd(TASK_TRANSPORT_TX);
         debug_tx_off();

@@ -58,7 +58,58 @@ void transport_init(void)
 
 /* ===================== SEND WITH ACK ===================== */
 
+void transport_prepare_packet(SecurePacket_t *packet)
+{
+    if (packet == NULL) {
+        return;
+    }
+
+    packet->sync_byte = SYNC_WORD;
+    packet->packet_id = packet_counter++;
+
+    /*
+     * Set DATA flag, but do not erase any existing flags.
+     */
+    packet->flags |= FLAG_DATA;
+
+    /*
+     * Clear CRC for now.
+     * CRC will be calculated after encryption.
+     */
+    packet->crc16 = 0;
+}
+
+int transport_finalize_send(SecurePacket_t *packet)
+{
+    if (packet == NULL) {
+        return 0;
+    }
+
+    /*
+     * CRC must be calculated after encryption because we want to protect
+     * the actual bytes that will be transmitted.
+     *
+     * This calculates CRC from packet_id to end of payload/flags area,
+     * excluding sync_byte and excluding crc16 itself.
+     */
+    packet->crc16 = calc_crc(
+        (uint8_t *)&packet->packet_id,
+        sizeof(SecurePacket_t) - 1 - 2
+    );
+
+    return bluetooth_send((uint8_t *)packet, sizeof(SecurePacket_t));
+}
+
+/*
+ * Backward-compatible wrapper.
+ * This is okay for unencrypted/simple sends, but app.c should use
+ * prepare -> encrypt -> finalize for normal audio data.
+ */
 int transport_send(SecurePacket_t *packet)
+{
+    transport_prepare_packet(packet);
+    return transport_finalize_send(packet);
+}
 {
     packet->sync_byte = SYNC_WORD;
     packet->packet_id = packet_counter++;
@@ -74,7 +125,7 @@ int transport_send(SecurePacket_t *packet)
 }
 
 
-/* ===================== HANDSHAKE ===================== */
+/* ===================== HANDSHAKE ===================== */`
 
 int transport_handshake(void)
 {
