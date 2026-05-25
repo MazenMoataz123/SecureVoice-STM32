@@ -4,7 +4,7 @@
 // HC-05 wired to UART2:
 // PA2 → HC-05 RX
 // PA3 ← HC-05 TX
-#define BT_SERIAL   Serial2
+#define BT_SERIAL   Serial1
 #define BT_BAUD  9600
 
 void bluetooth_init(void)

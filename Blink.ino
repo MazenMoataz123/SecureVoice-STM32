@@ -5,7 +5,7 @@ extern "C" {
   #include "timing.h"
 }
 
-#define BT_SERIAL  Serial2
+#define BT_SERIAL  Serial1
 #define BT_BAUD    9600
 
 // 1ms tick — hooks into STM32 Arduino core
@@ -52,13 +52,13 @@ static void bt_link_test(void)
 // ===================== SETUP =====================
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
     BT_SERIAL.begin(BT_BAUD);
     delay(500);
 
     Serial.println("[BLINK] Booting...");
 
-    bt_link_test();   // test BT link before handing off to app
+    //bt_link_test();   // test BT link before handing off to app
 
     app_init();       // full system init
 }

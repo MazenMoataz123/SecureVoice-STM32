@@ -54,10 +54,15 @@ void app_loop(void)
         SysHealth_MarkTaskEnd(TASK_AUDIO);
         debug_audio_off();
 
+        // TEMP DEBUG: remove after pipeline verification
         debug_print_bytes("[AUDIO] payload[0..7]", TX_packet.payload, 8);
 
         // -------- PREPARE PACKET --------
         transport_prepare_packet(&TX_packet);
+        // TEMP DEBUG: remove after pipeline verification
+        debug_print_int("[TX DEBUG] packet_id after prepare", TX_packet.packet_id);
+        // TEMP DEBUG: remove after pipeline verification
+        debug_print_int("[TX DEBUG] flags after prepare", TX_packet.flags);
 
         // -------- ENCRYPT --------
         debug_encrypt_on();
@@ -68,11 +73,20 @@ void app_loop(void)
         SysHealth_MarkTaskEnd(TASK_CRYPTO);
         debug_encrypt_off();
 
+        // TEMP DEBUG: remove after pipeline verification
+        debug_print_bytes("[TX DEBUG] encrypted payload[0..7]", TX_packet.payload, 8);
+        // TEMP DEBUG: remove after pipeline verification
+        debug_print_int("[TX DEBUG] flags after encrypt", TX_packet.flags);
+
         // -------- TX --------
         debug_tx_on();
         SysHealth_MarkTaskStart(TASK_TRANSPORT_TX);
 
         int tx_result = transport_finalize_send(&TX_packet);
+        // TEMP DEBUG: remove after pipeline verification
+        debug_print_int("[TX DEBUG] crc16 after finalize", TX_packet.crc16);
+        // TEMP DEBUG: remove after pipeline verification
+        debug_print_int("[TX DEBUG] tx_result after finalize", tx_result);
 
         SysHealth_MarkTaskEnd(TASK_TRANSPORT_TX);
         debug_tx_off();
