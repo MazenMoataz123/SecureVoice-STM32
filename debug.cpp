@@ -4,7 +4,6 @@
 // Serial2 is used for Bluetooth (PA2=TX, PA3=RX)
 // Serial  is used for USB debug monitor (your PC)
 #define DEBUG_SERIAL  Serial
-#define BT_SERIAL     Serial2
 
 void debug_init(void)
 {
