@@ -8,7 +8,7 @@
  * AUDIO MODULE
  * Responsibility:
  * - Capture raw audio (mic / simulated input)
- * - Compress into 8-bit G.711 A-law
+ * - Compress into 8-bit G.711 u-law
  * - Output fixed-size frame (PAYLOAD_SIZE)
  */
 
@@ -16,7 +16,7 @@ void audio_init(void);      //i personally beleive a ping pong buffer is much sa
 
 /*
  * Fills buffer with exactly PAYLOAD_SIZE bytes of encoded audio.
- * Output format: G.711 A-law (8-bit per sample)
+ * Output format: G.711 u-law (8-bit per sample)
  *
  * Must be deterministic and real-time safe (< frame deadline)(this becomes less of an issue if we use a ping pong buffer)
  */
