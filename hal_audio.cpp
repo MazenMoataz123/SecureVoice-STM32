@@ -1,13 +1,19 @@
 #include <Arduino.h>
 #include "hal_audio.h"
 
-// MAX9814 OUT -> PA0 / A0
+// MAX9814 OUT -> A0 / PA0
 #define MIC_PIN A0
+
+// Temporary speaker output through resistor
+// STM32 PA6 / A6 -> resistor -> speaker -> GND
+#define SPEAKER_PIN PA6
 
 void hal_audio_init(void)
 {
-    analogReadResolution(12);   // STM32 ADC range: 0 to 4095
+    analogReadResolution(12);   // ADC range: 0..4095
     pinMode(MIC_PIN, INPUT);
+
+    hal_audio_speaker_init();
 }
 
 uint16_t hal_audio_read_mic(void)
@@ -18,4 +24,21 @@ uint16_t hal_audio_read_mic(void)
 void hal_audio_delay_us(uint32_t us)
 {
     delayMicroseconds(us);
+}
+
+void hal_audio_speaker_init(void)
+{
+    pinMode(SPEAKER_PIN, OUTPUT);
+
+    /*
+     * 8-bit PWM output: 0..255
+     * 128 is the midpoint / silence-ish value.
+     */
+    analogWriteResolution(8);
+    analogWrite(SPEAKER_PIN, 128);
+}
+
+void hal_audio_write_speaker_pwm(uint8_t value)
+{
+    analogWrite(SPEAKER_PIN, value);
 }
