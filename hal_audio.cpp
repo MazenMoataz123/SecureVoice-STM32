@@ -2,7 +2,7 @@
 #include "hal_audio.h"
 
 // MAX9814 OUT -> A0 / PA0
-#define MIC_PIN A0
+#define MIC_PIN PA0
 
 // Temporary speaker output through resistor
 // STM32 PA6 / A6 -> resistor -> speaker -> GND
