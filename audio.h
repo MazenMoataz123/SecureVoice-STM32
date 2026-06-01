@@ -10,9 +10,9 @@
  * Responsibility:
  * - Capture microphone audio
  * - Convert ADC samples to signed PCM
- * - Encode PCM into 8-bit G.711 μ-law
+ * - Encode PCM into 8-bit G.711 mu-law
  * - Fill TX payload with PAYLOAD_SIZE bytes
- * - Decode received μ-law payload
+ * - Decode received G.711 mu-law payload
  * - Output basic PWM speaker signal
  */
 

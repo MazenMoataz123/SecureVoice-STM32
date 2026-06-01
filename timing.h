@@ -9,8 +9,9 @@
 
 #define FULL_DUPLEX_ENABLED   1
 
-// Timing constraints (VERY IMPORTANT for STM32 real-time behavior)
-#define FRAME_PERIOD_US       20000  // 20ms
+// Slow frame pacing for 9600 baud Bluetooth testing.
+// This is intentionally choppy/clicky, not real-time voice.
+#define FRAME_PERIOD_US       (FRAME_DURATION_MS * 1000)
 
 //========TIMING CONTROL============
 void time_init(void);
@@ -18,7 +19,7 @@ void time_init(void);
 /* called every 1ms from SysTick */
 void time_tick(void);
 
-/* check if 20ms frame is ready */
+/* check if the next slow test frame is ready */
 int time_frame_ready(void);
 
 /* clear the flag after processing */

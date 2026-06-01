@@ -15,7 +15,7 @@
 /*
  * MAX9814 usually has a DC offset around 1.25V.
  * On a 12-bit 3.3V ADC:
- * 1.25 / 3.3 * 4095 ≈ 1550
+ * 1.25 / 3.3 * 4095 ~= 1550
  *
  * We calibrate this at startup.
  */
@@ -40,7 +40,7 @@ void audio_init(void)
 }
 
 /*
- * Convert signed 16-bit PCM to G.711 μ-law.
+ * Convert signed 16-bit PCM to G.711 mu-law.
  */
 uint8_t linear_to_ulaw(int16_t sample)
 {
@@ -81,7 +81,7 @@ uint8_t linear_to_ulaw(int16_t sample)
 }
 
 /*
- * Convert G.711 μ-law back to signed 16-bit PCM.
+ * Convert G.711 mu-law back to signed 16-bit PCM.
  */
 static int16_t ulaw_to_linear(uint8_t ulaw_byte)
 {
@@ -135,7 +135,7 @@ static int16_t adc12_to_pcm16(uint16_t adc_sample)
 }
 
 /*
- * Fill TX payload with real microphone audio encoded as μ-law.
+ * Fill TX payload with real microphone audio encoded as G.711 mu-law.
  */
 void audio_get_frame(uint8_t *payload)
 {
@@ -155,12 +155,13 @@ void audio_get_frame(uint8_t *payload)
 }
 
 /*
- * Play received μ-law audio through PWM speaker output.
+ * Play received G.711 mu-law audio through PWM speaker output.
  *
  * Temporary speaker setup:
- * PA6 -> resistor -> 8Ω speaker -> GND
+ * PA6 drives a 2N2222 transistor speaker circuit for testing.
  *
- * This will be quiet and low quality until you use an amplifier.
+ * Do not connect an 8 ohm speaker directly to an STM32 pin.
+ * Use a proper audio amplifier for the final build.
  */
 void play_audio(uint8_t *payload)
 {

@@ -4,8 +4,9 @@
 // MAX9814 OUT -> A0 / PA0
 #define MIC_PIN PA0
 
-// Temporary speaker output through resistor
-// STM32 PA6 / A6 -> resistor -> speaker -> GND
+// Temporary speaker output through a 2N2222 transistor driver.
+// Do not connect an 8 ohm speaker directly to an STM32 pin.
+// A proper audio amplifier is preferred for the final build.
 #define SPEAKER_PIN PA6
 
 void hal_audio_init(void)

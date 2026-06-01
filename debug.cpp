@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include "debug.h"
 
-// Serial2 is used for Bluetooth (PA2=TX, PA3=RX)
-// Serial  is used for USB debug monitor (your PC)
+// Serial is used for USB debug monitor (your PC).
+// Bluetooth uses HardwareSerial BT(PA10, PA9) in bluetooth.cpp.
 #define DEBUG_SERIAL  Serial
 
 void debug_init(void)
