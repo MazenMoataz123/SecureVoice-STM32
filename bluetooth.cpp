@@ -6,13 +6,17 @@
 // HC-05 RXD -> PA9
 HardwareSerial BT(PA10, PA9);
 
-#define BT_BAUD 9600
+#define BT_BAUD 115200
+#define BT_ENABLE_STARTUP_TEXT 0
 
 void bluetooth_init(void)
 {
     BT.begin(BT_BAUD);
     delay(500);
+
+#if BT_ENABLE_STARTUP_TEXT
     bluetooth_print("[BT] Device ready\r\n");
+#endif
 }
 
 int bluetooth_send(uint8_t *data, uint16_t len)

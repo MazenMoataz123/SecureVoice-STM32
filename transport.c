@@ -9,6 +9,7 @@
 
 #define RX_BUFFER_SIZE 256
 #define ACK_TIMEOUT    100
+#define TRANSPORT_SEND_ACKS 0
 
 /* ===================== INTERNAL ===================== */
 
@@ -176,8 +177,10 @@ static void process_byte(uint8_t byte)
     );
 
     if (crc == rx_packet.crc16) {
+#if TRANSPORT_SEND_ACKS
         /*
-         * Send ACK for valid DATA packets.
+         * ACKs are disabled for one-way voice streaming by default.
+         * Re-enable only for non-real-time transport testing.
          */
         if (rx_packet.flags & FLAG_DATA) {
             SecurePacket_t ack;
@@ -195,6 +198,7 @@ static void process_byte(uint8_t byte)
 
             bluetooth_send((uint8_t *)&ack, sizeof(SecurePacket_t));
         }
+#endif
 
         packet_ready = 1;
     }

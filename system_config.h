@@ -3,11 +3,14 @@
 
 //SYSTEM CONFIG ================================
 
-#define SAMPLE_RATE 8000            //8Khz aka 8k samples per second, those sample come in a rate that is native to the mic
-#define FRAME_DURATION_MS  1000     // slow 9600 baud Bluetooth test pacing; choppy, not real-time voice
-#define FRAME_SIZE         160      // fixed SecureVoice payload size in bytes
+#define DEVICE_ROLE_TRANSMITTER 1
+#define DEVICE_ROLE_RECEIVER    2
 
+#define DEVICE_ROLE DEVICE_ROLE_TRANSMITTER
 
+#define SAMPLE_RATE       8000
+#define FRAME_DURATION_MS 20
+#define FRAME_SIZE        160
 
 #define UART_BAUDRATE      115200
 #define USE_DMA            1        // 1 = enabled, 0 = disabled
